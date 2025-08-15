@@ -8,6 +8,7 @@ import { GalleryImage } from '../models/GalleryImage';
 import { ContactMessage } from '../models/ContactMessage';
 import { EventArtist } from '../models/EventArtist';
 import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 dotenv.config();
 
@@ -29,6 +30,8 @@ console.log('Database:', DB_NAME);
 console.log('Environment:', NODE_ENV);
 console.log('Password length:', DB_PASSWORD ? DB_PASSWORD.length : 0);
 
+const isProduction = NODE_ENV === 'production';
+
 export const AppDataSource = new DataSource({
   type: 'postgres',
   host: DB_HOST,
@@ -36,8 +39,8 @@ export const AppDataSource = new DataSource({
   username: DB_USER,
   password: DB_PASSWORD,
   database: DB_NAME,
-  synchronize: false, // Disable synchronize when using migrations
-  logging: true,
+  synchronize: false, // Always false - use migrations
+  logging: !isProduction,
   extra: {
     ssl: false,
     trustServerCertificate: true,
@@ -53,6 +56,11 @@ export const AppDataSource = new DataSource({
     GalleryImage,
     ContactMessage,
     EventArtist
-  ]
-  // Removed migrations and subscribers lines to fix module loading error
+  ],
+  migrations: [
+    isProduction 
+      ? path.join(__dirname, '../migrations/*.js')
+      : path.join(__dirname, '../migrations/*.ts')
+  ],
+  migrationsTableName: 'migrations'
 });
