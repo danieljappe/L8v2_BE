@@ -53,7 +53,6 @@ export const AppDataSource = new DataSource({
     GalleryImage,
     ContactMessage,
     EventArtist
-  ],
-  migrations: ['src/migrations/*.ts'],
-  subscribers: ['src/subscribers/*.ts']
-}); 
+  ]
+  // Removed migrations and subscribers lines to fix module loading error
+});
