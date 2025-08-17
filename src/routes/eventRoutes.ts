@@ -137,11 +137,18 @@ const getEventById: RequestHandler = async (req, res) => {
 // Create event
 const createEvent: RequestHandler = async (req, res) => {
   try {
+    console.log('Creating event with data:', req.body);
     const event = eventRepository.create(req.body);
     const result = await eventRepository.save(event);
+    console.log('Event created successfully:', result);
     res.status(201).json(result);
-  } catch (error) {
-    res.status(500).json({ message: 'Error creating event' });
+  } catch (error: any) {
+    console.error('Error creating event:', error);
+    res.status(500).json({ 
+      message: 'Error creating event', 
+      error: error.message,
+      details: error.detail || error.code
+    });
   }
 };
 

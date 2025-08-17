@@ -12,7 +12,8 @@
     "migration:create": "npm run typeorm -- migration:create",
     "migration:run": "npm run typeorm -- migration:run -d typeorm.config.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d typeorm.config.ts",
-    "migration:show": "npm run typeorm -- migration:show -d typeorm.config.ts"
+    "migration:show": "npm run typeorm -- migration:show -d typeorm.config.ts",
+    "migration:custom": "ts-node run-migration.ts"
   },
   "dependencies": {
     "@types/cors": "^2.8.17",

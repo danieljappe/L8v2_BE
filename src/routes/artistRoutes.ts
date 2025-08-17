@@ -161,14 +161,57 @@ const updateArtist: RequestHandler = async (req, res) => {
 // Delete artist
 const deleteArtist: RequestHandler = async (req, res) => {
   try {
+    console.log(`🔴 Attempting to delete artist with ID: ${req.params.id}`);
+    
     const artist = await artistRepository.findOne({ where: { id: req.params.id } });
     if (!artist) {
+      console.log(`❌ Artist not found: ${req.params.id}`);
       res.status(404).json({ message: 'Artist not found' });
       return;
     }
+
+    console.log(`✅ Found artist: ${artist.name}`);
+
+    // Check if artist has any related EventArtist records
+    const eventArtistRepository = AppDataSource.getRepository('EventArtist');
+    const relatedEventArtists = await eventArtistRepository.find({
+      where: { artist: { id: req.params.id } },
+      relations: ['event']
+    });
+
+    console.log(`🔍 Found ${relatedEventArtists.length} related EventArtist records`);
+
+    if (relatedEventArtists.length > 0) {
+      const eventNames = relatedEventArtists.map(ea => ea.event?.title || 'Unknown Event').join(', ');
+      const eventIds = relatedEventArtists.map(ea => ea.event?.id).filter(id => id);
+      
+      console.log(`❌ Cannot delete artist - associated with events: ${eventNames}`);
+      
+      return res.status(400).json({ 
+        message: 'Cannot delete artist. This artist is associated with events and must be removed from all events first.',
+        relatedEvents: relatedEventArtists.length,
+        eventNames: eventNames,
+        eventIds: eventIds,
+        details: `Please remove this artist from the following events before deleting: ${eventNames}`
+      });
+    }
+
+    console.log(`🗑️ No related events found, proceeding with deletion`);
     await artistRepository.remove(artist);
+    console.log(`✅ Artist deleted successfully: ${artist.name}`);
     res.status(204).send();
   } catch (error) {
+    console.error('❌ Error deleting artist:', error);
+    
+    // Check if it's a foreign key constraint error
+    if (error instanceof Error && error.message && error.message.includes('foreign key constraint')) {
+      console.log(`🔒 Foreign key constraint error detected`);
+      return res.status(400).json({ 
+        message: 'Cannot delete artist. This artist is associated with events and must be removed from all events first.',
+        details: 'Please remove this artist from all events before deleting.'
+      });
+    }
+    
     res.status(500).json({ message: 'Error deleting artist' });
   }
 };

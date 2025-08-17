@@ -24,7 +24,7 @@ export class Event {
   @Column({ nullable: true })
   endTime?: string;
 
-  @Column()
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   ticketPrice!: number;
 
   @Column()
