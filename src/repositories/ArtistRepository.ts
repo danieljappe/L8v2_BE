@@ -1,6 +1,6 @@
 import { Artist } from '../models/Artist';
 import { BaseRepository } from './BaseRepository';
-import { FindOptionsWhere, MoreThanOrEqual } from 'typeorm';
+import { FindOptionsWhere } from 'typeorm';
 
 export class ArtistRepository extends BaseRepository<Artist> {
   constructor() {
@@ -15,11 +15,6 @@ export class ArtistRepository extends BaseRepository<Artist> {
     return this.repository.findBy({ genre } as FindOptionsWhere<Artist>);
   }
 
-  async findActiveArtists(): Promise<Artist[]> {
-    return this.repository.findBy({ isActive: true } as FindOptionsWhere<Artist>);
-  }
-
-  async findArtistsByRating(minRating: number): Promise<Artist[]> {
-    return this.repository.findBy({ rating: MoreThanOrEqual(minRating) } as FindOptionsWhere<Artist>);
-  }
+  // Note: isActive and rating properties have been removed from the Artist model
+  // These methods are no longer applicable and have been removed
 } 

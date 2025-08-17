@@ -37,26 +37,6 @@ export class ArtistService {
     return this.artistRepository.findByGenre(genre);
   }
 
-  async findActiveArtists(): Promise<Artist[]> {
-    return this.artistRepository.findActiveArtists();
-  }
-
-  async findArtistsByRating(minRating: number): Promise<Artist[]> {
-    return this.artistRepository.findArtistsByRating(minRating);
-  }
-
-  async deactivateArtist(id: string): Promise<Artist | null> {
-    return this.artistRepository.update(id, { isActive: false });
-  }
-
-  async activateArtist(id: string): Promise<Artist | null> {
-    return this.artistRepository.update(id, { isActive: true });
-  }
-
-  async updateArtistRating(id: string, rating: number): Promise<Artist | null> {
-    if (rating < 0 || rating > 5) {
-      throw new Error('Rating must be between 0 and 5');
-    }
-    return this.artistRepository.update(id, { rating });
-  }
+  // Note: isActive and rating properties have been removed from the Artist model
+  // These methods are no longer applicable and have been removed
 } 

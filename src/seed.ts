@@ -63,11 +63,11 @@ async function seed() {
     console.log('🎤 Seeding artists...');
     const artistRepo = AppDataSource.getRepository(Artist);
     const artists = await Promise.all([
-      artistRepo.create({ name: 'Chrome!', bio: 'Chrome! er en dansk undergrunds rapper', genre: 'Opium', isActive: true }),
-      artistRepo.create({ name: 'Skomager', bio: 'Skomager er også en dansk undergrunds rapper', genre: 'Opium', isActive: true }),
-      artistRepo.create({ name: 'Jazz Cats', bio: 'Smooth jazz group.', genre: 'Jazz', isActive: true }),
-      artistRepo.create({ name: 'Pop Stars', bio: 'Top pop artists.', genre: 'Pop', isActive: true }),
-      artistRepo.create({ name: 'Electronic Dreams', bio: 'Electronic music duo.', genre: 'Electronic', isActive: true }),
+      artistRepo.create({ name: 'Chrome!', bio: 'Chrome! er en dansk undergrunds rapper', genre: 'Opium' }),
+      artistRepo.create({ name: 'Skomager', bio: 'Skomager er også en dansk undergrunds rapper', genre: 'Opium' }),
+      artistRepo.create({ name: 'Jazz Cats', bio: 'Smooth jazz group.', genre: 'Jazz' }),
+      artistRepo.create({ name: 'Pop Stars', bio: 'Top pop artists.', genre: 'Pop' }),
+      artistRepo.create({ name: 'Electronic Dreams', bio: 'Electronic music duo.', genre: 'Electronic' }),
     ].map(async a => {
       let existing = await artistRepo.findOneBy({ name: a.name });
       if (!existing) {
