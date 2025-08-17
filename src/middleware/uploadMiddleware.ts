@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 // Configure storage for gallery uploads
-const storage = multer.diskStorage({
+const galleryStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, '../../uploads/gallery');
     
@@ -43,6 +43,47 @@ const storage = multer.diskStorage({
   }
 });
 
+// Configure storage for artist uploads
+const artistStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../uploads/artists');
+    
+    // Security check: ensure the path is within the intended directory
+    const resolvedPath = path.resolve(uploadDir);
+    const basePath = path.resolve(path.join(__dirname, '../../uploads'));
+    
+    if (!resolvedPath.startsWith(basePath)) {
+      return cb(new Error('Invalid upload path'), '');
+    }
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      try {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      } catch (error) {
+        return cb(new Error('Failed to create upload directory'), '');
+      }
+    }
+    
+    // Check if directory is writable
+    try {
+      fs.accessSync(uploadDir, fs.constants.W_OK);
+    } catch (error) {
+      return cb(new Error('Upload directory is not writable'), '');
+    }
+    
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename with timestamp and sanitize
+    const timestamp = Date.now();
+    const random = Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname).toLowerCase();
+    const safeName = `artist-${timestamp}-${random}${ext}`;
+    cb(null, safeName);
+  }
+});
+
 // File filter for images only
 const fileFilter = (req: any, file: any, cb: any) => {
   // Check file type by extension
@@ -63,8 +104,8 @@ const fileFilter = (req: any, file: any, cb: any) => {
 };
 
 // Configure multer for gallery uploads
-export const upload = multer({
-  storage: storage,
+export const galleryUpload = multer({
+  storage: galleryStorage,
   fileFilter: fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
@@ -72,11 +113,24 @@ export const upload = multer({
   }
 });
 
+// Configure multer for artist uploads
+export const artistUpload = multer({
+  storage: artistStorage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 1 // Maximum 1 file per request for artist
+  }
+});
+
 // Single file upload for gallery
-export const uploadSingle = upload.single('image');
+export const uploadSingle = galleryUpload.single('image');
+
+// Single file upload for artist
+export const uploadArtistImage = artistUpload.single('image');
 
 // Multiple files upload (if needed later)
-export const uploadMultiple = upload.array('images', 10);
+export const uploadMultiple = galleryUpload.array('images', 10);
 
 // Error handling middleware for multer
 export const handleUploadError = (err: any, req: any, res: any, next: any) => {

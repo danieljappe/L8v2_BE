@@ -2,6 +2,9 @@ import { Router, RequestHandler } from 'express';
 import { AppDataSource } from '../config/database';
 import { Artist } from '../models/Artist';
 import { authenticateJWT } from '../middleware/authMiddleware';
+import { uploadArtistImage, handleUploadError } from '../middleware/uploadMiddleware';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
 const artistRepository = AppDataSource.getRepository(Artist);
@@ -124,10 +127,17 @@ const getArtistById: RequestHandler = async (req, res) => {
 // Create artist
 const createArtist: RequestHandler = async (req, res) => {
   try {
+    console.log('Backend: Creating artist with data:', req.body);
+    
     const artist = artistRepository.create(req.body);
+    console.log('Backend: Created artist entity:', artist);
+    
     const result = await artistRepository.save(artist);
+    console.log('Backend: Saved artist result:', result);
+    
     res.status(201).json(result);
   } catch (error) {
+    console.error('Backend: Error creating artist:', error);
     res.status(500).json({ message: 'Error creating artist' });
   }
 };
@@ -163,9 +173,47 @@ const deleteArtist: RequestHandler = async (req, res) => {
   }
 };
 
+// Upload artist image
+const handleArtistImageUpload: RequestHandler = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Validate file size (5MB limit)
+    if (req.file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({ message: 'File size exceeds 5MB limit' });
+    }
+
+    // Validate file type
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedMimeTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({ message: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.' });
+    }
+
+    // Create file path relative to uploads directory
+    const filePath = `/uploads/artists/${req.file.filename}`;
+    
+    res.status(201).json({
+      message: 'Artist image uploaded successfully',
+      file: {
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        url: filePath
+      }
+    });
+  } catch (error) {
+    console.error('Artist image upload error:', error);
+    res.status(500).json({ message: 'Error uploading artist image' });
+  }
+};
+
 router.get('/', getAllArtists);
 router.get('/:id', getArtistById);
 router.post('/', authenticateJWT, createArtist);
+router.post('/upload-image', authenticateJWT, uploadArtistImage, handleUploadError, handleArtistImageUpload);
 router.put('/:id', authenticateJWT, updateArtist);
 router.delete('/:id', authenticateJWT, deleteArtist);
 

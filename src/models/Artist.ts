@@ -1,6 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { EventArtist } from './EventArtist';
 
+interface SocialMedia {
+  platform: string;
+  url: string;
+}
+
 @Entity()
 export class Artist {
   @PrimaryGeneratedColumn('uuid')
@@ -18,17 +23,11 @@ export class Artist {
   @Column({ nullable: true })
   website?: string;
 
-  @Column({ nullable: true })
-  socialMedia?: string;
+  @Column({ type: 'json', nullable: true })
+  socialMedia?: SocialMedia[];
 
   @Column({ nullable: true })
   genre?: string;
-
-  @Column({ type: 'float', default: 0 })
-  rating!: number;
-
-  @Column({ default: true })
-  isActive!: boolean;
 
   @OneToMany(() => EventArtist, eventArtist => eventArtist.artist)
   eventArtists!: EventArtist[];

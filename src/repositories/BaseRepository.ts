@@ -17,7 +17,9 @@ export class BaseRepository<T extends ObjectLiteral> {
   }
 
   async create(data: DeepPartial<T>): Promise<T> {
+    console.log('BaseRepository: Creating entity with data:', data);
     const entity = this.repository.create(data);
+    console.log('BaseRepository: Created entity:', entity);
     return this.repository.save(entity);
   }
 
