@@ -7,7 +7,7 @@ export class Ticket {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @ManyToOne(() => Event, event => event.tickets)
+  @ManyToOne(() => Event)
   @JoinColumn()
   event!: Event;
 

@@ -1,7 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Venue } from './Venue';
 import { EventArtist } from './EventArtist';
-import { Ticket } from './Ticket';
 import { GalleryImage } from './GalleryImage';
 
 @Entity()
@@ -48,15 +47,15 @@ export class Event {
   @Column({ default: 0 })
   currentAttendees!: number;
 
+  @Column({ nullable: true })
+  billettoURL?: string;
+
   @ManyToOne(() => Venue, venue => venue.events, { nullable: true })
   @JoinColumn()
   venue?: Venue;
 
   @OneToMany(() => EventArtist, eventArtist => eventArtist.event)
   eventArtists!: EventArtist[];
-
-  @OneToMany(() => Ticket, ticket => ticket.event)
-  tickets!: Ticket[];
 
   @CreateDateColumn()
   createdAt!: Date;
