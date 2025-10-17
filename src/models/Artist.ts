@@ -42,6 +42,9 @@ export class Artist {
   @Column({ nullable: true })
   genre?: string;
 
+  @Column({ default: false })
+  isBookable!: boolean;
+
   @OneToMany(() => EventArtist, eventArtist => eventArtist.artist)
   eventArtists!: EventArtist[];
 

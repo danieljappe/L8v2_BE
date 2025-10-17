@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { AddBillettoURLToEvent1700000000005 } from './src/migrations/1700000000005-AddBillettoURLToEvent';
+import { AddIsBookableToArtist1700000000007 } from './src/migrations/1700000000007-AddIsBookableToArtist';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -15,14 +15,14 @@ async function runMigration() {
     synchronize: false,
     logging: true,
     entities: [],
-    migrations: [AddBillettoURLToEvent1700000000005]
+    migrations: [AddIsBookableToArtist1700000000007]
   });
 
   try {
     await dataSource.initialize();
     console.log('Database connection established');
 
-    const migration = new AddBillettoURLToEvent1700000000005();
+    const migration = new AddIsBookableToArtist1700000000007();
     await migration.up(dataSource.createQueryRunner());
     
     console.log('Migration completed successfully');
