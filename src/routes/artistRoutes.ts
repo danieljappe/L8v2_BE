@@ -3,6 +3,7 @@ import { AppDataSource } from '../config/database';
 import { Artist } from '../models/Artist';
 import { authenticateJWT } from '../middleware/authMiddleware';
 import { uploadArtistImage, handleUploadError } from '../middleware/uploadMiddleware';
+import { createEmbedding, sanitizeEmbedCode, validateAndSanitizeEmbedding } from '../utils/embeddingUtils';
 import path from 'path';
 import fs from 'fs';
 
@@ -129,6 +130,23 @@ const createArtist: RequestHandler = async (req, res) => {
   try {
     console.log('Backend: Creating artist with data:', req.body);
     
+    // Process embeddings if provided
+    if (req.body.embeddings && Array.isArray(req.body.embeddings)) {
+      for (const embedding of req.body.embeddings) {
+        // Validate and sanitize each embedding
+        const validation = validateAndSanitizeEmbedding(embedding.embedCode);
+        if (validation.isValid) {
+          embedding.embedCode = sanitizeEmbedCode(validation.sanitizedCode!);
+          embedding.platform = validation.platform!;
+          embedding.title = validation.title;
+          embedding.description = validation.description;
+          embedding.thumbnailUrl = validation.thumbnailUrl;
+        } else {
+          console.warn('Invalid embedding code:', validation.error);
+        }
+      }
+    }
+    
     const artist = artistRepository.create(req.body);
     console.log('Backend: Created artist entity:', artist);
     
@@ -253,11 +271,149 @@ const handleArtistImageUpload: RequestHandler = async (req, res) => {
   }
 };
 
+// Add embedding to artist
+const addEmbedding: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { embedCode } = req.body;
+
+    if (!embedCode) {
+      return res.status(400).json({ message: 'Embed code is required' });
+    }
+
+    const artist = await artistRepository.findOne({ where: { id } });
+    if (!artist) {
+      return res.status(404).json({ message: 'Artist not found' });
+    }
+
+    // Validate and sanitize the embed code
+    const validation = validateAndSanitizeEmbedding(embedCode);
+    if (!validation.isValid) {
+      return res.status(400).json({ message: validation.error });
+    }
+
+    // Sanitize the embed code
+    const sanitizedCode = sanitizeEmbedCode(validation.sanitizedCode!);
+
+    // Create new embedding
+    const newEmbedding = createEmbedding(sanitizedCode);
+    if (!newEmbedding) {
+      return res.status(400).json({ message: 'Failed to create embedding' });
+    }
+
+    // Add to artist's embeddings array
+    if (!artist.embeddings) {
+      artist.embeddings = [];
+    }
+    artist.embeddings.push(newEmbedding);
+
+    await artistRepository.save(artist);
+
+    res.status(201).json({
+      message: 'Embedding added successfully',
+      embedding: newEmbedding
+    });
+  } catch (error) {
+    console.error('Error adding embedding:', error);
+    res.status(500).json({ message: 'Error adding embedding' });
+  }
+};
+
+// Update embedding
+const updateEmbedding: RequestHandler = async (req, res) => {
+  try {
+    const { id, embeddingId } = req.params;
+    const { embedCode } = req.body;
+
+    if (!embedCode) {
+      return res.status(400).json({ message: 'Embed code is required' });
+    }
+
+    const artist = await artistRepository.findOne({ where: { id } });
+    if (!artist) {
+      return res.status(404).json({ message: 'Artist not found' });
+    }
+
+    if (!artist.embeddings) {
+      return res.status(404).json({ message: 'No embeddings found' });
+    }
+
+    const embeddingIndex = artist.embeddings.findIndex(emb => emb.id === embeddingId);
+    if (embeddingIndex === -1) {
+      return res.status(404).json({ message: 'Embedding not found' });
+    }
+
+    // Validate and sanitize the embed code
+    const validation = validateAndSanitizeEmbedding(embedCode);
+    if (!validation.isValid) {
+      return res.status(400).json({ message: validation.error });
+    }
+
+    // Sanitize the embed code
+    const sanitizedCode = sanitizeEmbedCode(validation.sanitizedCode!);
+
+    // Update the embedding
+    artist.embeddings[embeddingIndex] = {
+      ...artist.embeddings[embeddingIndex],
+      embedCode: sanitizedCode,
+      platform: validation.platform!,
+      title: validation.title,
+      description: validation.description,
+      thumbnailUrl: validation.thumbnailUrl
+    };
+
+    await artistRepository.save(artist);
+
+    res.json({
+      message: 'Embedding updated successfully',
+      embedding: artist.embeddings[embeddingIndex]
+    });
+  } catch (error) {
+    console.error('Error updating embedding:', error);
+    res.status(500).json({ message: 'Error updating embedding' });
+  }
+};
+
+// Delete embedding
+const deleteEmbedding: RequestHandler = async (req, res) => {
+  try {
+    const { id, embeddingId } = req.params;
+
+    const artist = await artistRepository.findOne({ where: { id } });
+    if (!artist) {
+      return res.status(404).json({ message: 'Artist not found' });
+    }
+
+    if (!artist.embeddings) {
+      return res.status(404).json({ message: 'No embeddings found' });
+    }
+
+    const embeddingIndex = artist.embeddings.findIndex(emb => emb.id === embeddingId);
+    if (embeddingIndex === -1) {
+      return res.status(404).json({ message: 'Embedding not found' });
+    }
+
+    // Remove the embedding
+    artist.embeddings.splice(embeddingIndex, 1);
+    await artistRepository.save(artist);
+
+    res.json({ message: 'Embedding deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting embedding:', error);
+    res.status(500).json({ message: 'Error deleting embedding' });
+  }
+};
+
 router.get('/', getAllArtists);
 router.get('/:id', getArtistById);
 router.post('/', authenticateJWT, createArtist);
 router.post('/upload-image', authenticateJWT, uploadArtistImage, handleUploadError, handleArtistImageUpload);
 router.put('/:id', authenticateJWT, updateArtist);
 router.delete('/:id', authenticateJWT, deleteArtist);
+
+// Embedding routes
+router.post('/:id/embeddings', authenticateJWT, addEmbedding);
+router.put('/:id/embeddings/:embeddingId', authenticateJWT, updateEmbedding);
+router.delete('/:id/embeddings/:embeddingId', authenticateJWT, deleteEmbedding);
 
 export default router; 

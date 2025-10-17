@@ -1,9 +1,19 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { EventArtist } from './EventArtist';
 
-interface SocialMedia {
+export interface SocialMedia {
   platform: string;
   url: string;
+}
+
+export interface Embedding {
+  id: string;
+  platform: 'spotify' | 'youtube' | 'soundcloud';
+  embedCode: string;
+  title?: string;
+  description?: string;
+  thumbnailUrl?: string;
+  createdAt: Date;
 }
 
 @Entity()
@@ -25,6 +35,9 @@ export class Artist {
 
   @Column({ type: 'json', nullable: true })
   socialMedia?: SocialMedia[];
+
+  @Column({ type: 'json', nullable: true })
+  embeddings?: Embedding[];
 
   @Column({ nullable: true })
   genre?: string;

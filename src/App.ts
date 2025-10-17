@@ -25,6 +25,9 @@ dotenv.config();
 
 const app: Express = express();
 
+// Trust proxy for rate limiting behind reverse proxy
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors());
 app.use(helmet({
