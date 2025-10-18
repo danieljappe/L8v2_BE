@@ -50,8 +50,11 @@ export class Event {
   @Column({ nullable: true })
   billettoURL?: string;
 
+  @Column({ nullable: true })
+  venueId?: string;
+
   @ManyToOne(() => Venue, venue => venue.events, { nullable: true })
-  @JoinColumn()
+  @JoinColumn({ name: 'venueId' })
   venue?: Venue;
 
   @OneToMany(() => EventArtist, eventArtist => eventArtist.event)

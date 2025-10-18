@@ -29,7 +29,18 @@ const app: Express = express();
 app.set('trust proxy', 1);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://l8events.dk',
+    'https://www.l8events.dk'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+}));
 app.use(helmet({
   crossOriginResourcePolicy: { 
     policy: "cross-origin" 

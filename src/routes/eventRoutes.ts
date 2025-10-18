@@ -164,8 +164,15 @@ const updateEvent: RequestHandler = async (req, res) => {
       return;
     }
     eventRepository.merge(event, req.body);
-    const result = await eventRepository.save(event);
-    res.json(result);
+    await eventRepository.save(event);
+    
+    // Refetch the event with relations to ensure all data is populated
+    const updatedEvent = await eventRepository.findOne({
+      where: { id: req.params.id },
+      relations: ['venue', 'eventArtists', 'eventArtists.artist', 'galleryImages']
+    });
+    
+    res.json(updatedEvent);
   } catch (error: any) {
     console.error('Error updating event:', error);
     res.status(500).json({ message: 'Error updating event', error: error.message });
