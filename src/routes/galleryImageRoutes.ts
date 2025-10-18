@@ -1,6 +1,7 @@
 import { Router, RequestHandler } from 'express';
 import { AppDataSource } from '../config/database';
 import { GalleryImage } from '../models/GalleryImage';
+import { Event } from '../models/Event';
 import { authenticateJWT } from '../middleware/authMiddleware';
 import { uploadSingle, handleUploadError } from '../middleware/uploadMiddleware';
 import path from 'path';
@@ -10,10 +11,19 @@ import rateLimit from 'express-rate-limit';
 
 const router = Router();
 const galleryImageRepository = AppDataSource.getRepository(GalleryImage);
+const eventRepository = AppDataSource.getRepository(Event);
 
 interface GalleryImageParams {
   id: string;
 }
+
+// Helper function to validate eventId
+const validateEventId = async (eventId?: string): Promise<boolean> => {
+  if (!eventId) return true; // eventId is optional
+  
+  const event = await eventRepository.findOne({ where: { id: eventId } });
+  return !!event;
+};
 
 /**
  * @swagger
@@ -42,6 +52,10 @@ interface GalleryImageParams {
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               eventId:
+ *                 type: string
+ *                 description: Optional event ID to link the image to an event
  *     responses:
  *       201:
  *         description: Gallery image created
@@ -84,6 +98,9 @@ interface GalleryImageParams {
  *               uploadedBy:
  *                 type: string
  *                 description: Name of the person uploading
+ *               eventId:
+ *                 type: string
+ *                 description: Optional event ID to link the image to an event
  *     responses:
  *       201:
  *         description: Image uploaded successfully
@@ -135,6 +152,10 @@ interface GalleryImageParams {
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               eventId:
+ *                 type: string
+ *                 description: Optional event ID to link the image to an event
  *     responses:
  *       200:
  *         description: Gallery image updated
@@ -185,7 +206,17 @@ const getGalleryImageById: RequestHandler = async (req, res) => {
 // Create gallery image
 const createGalleryImage: RequestHandler = async (req, res) => {
   try {
-    const galleryImage = galleryImageRepository.create(req.body);
+    const { eventId, ...imageData } = req.body;
+    
+    // Validate eventId if provided
+    if (eventId && !(await validateEventId(eventId))) {
+      return res.status(400).json({ message: 'Invalid eventId provided' });
+    }
+    
+    const galleryImage = galleryImageRepository.create({
+      ...imageData,
+      eventId: eventId || null
+    });
     const result = await galleryImageRepository.save(galleryImage);
     res.status(201).json(result);
   } catch (error) {
@@ -196,6 +227,13 @@ const createGalleryImage: RequestHandler = async (req, res) => {
 // Update gallery image
 const updateGalleryImage: RequestHandler = async (req, res) => {
   try {
+    const { eventId, ...updateData } = req.body;
+    
+    // Validate eventId if provided
+    if (eventId && !(await validateEventId(eventId))) {
+      return res.status(400).json({ message: 'Invalid eventId provided' });
+    }
+    
     const galleryImage = await galleryImageRepository.findOne({
       where: { id: req.params.id }
     });
@@ -203,7 +241,11 @@ const updateGalleryImage: RequestHandler = async (req, res) => {
       res.status(404).json({ message: 'Gallery image not found' });
       return;
     }
-    galleryImageRepository.merge(galleryImage, req.body);
+    
+    galleryImageRepository.merge(galleryImage, {
+      ...updateData,
+      eventId: eventId !== undefined ? eventId : galleryImage.eventId
+    });
     const result = await galleryImageRepository.save(galleryImage);
     res.json(result);
   } catch (error) {
@@ -286,6 +328,12 @@ const uploadGalleryImage: RequestHandler = async (req, res) => {
         tags = [];
       }
     }
+
+    // Validate eventId if provided
+    const eventId = req.body.eventId;
+    if (eventId && !(await validateEventId(eventId))) {
+      return res.status(400).json({ message: 'Invalid eventId provided' });
+    }
     
     console.log(`Creating gallery image record with title: "${title}", description: "${description}", category: ${category}, tags: ${tags.length}`);
     
@@ -298,7 +346,8 @@ const uploadGalleryImage: RequestHandler = async (req, res) => {
       tags: tags,
       photographer: req.body.uploadedBy || 'Admin',
       isPublished: true,
-      orderIndex: 0
+      orderIndex: 0,
+      eventId: eventId || null
     });
 
     const result = await galleryImageRepository.save(galleryImage);
