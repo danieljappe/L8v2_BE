@@ -98,7 +98,7 @@ interface EventParams {
 const getAllEvents: RequestHandler = async (_req, res) => {
   try {
     const events = await eventRepository.find({
-      relations: ['venue', 'eventArtists', 'eventArtists.artist']
+      relations: ['venue', 'eventArtists', 'eventArtists.artist', 'galleryImages']
     });
     res.json(events);
   } catch (error) {
@@ -119,7 +119,7 @@ const getEventById: RequestHandler = async (req, res) => {
 
     const event = await eventRepository.findOne({
       where: { id: eventId },
-      relations: ['venue', 'eventArtists', 'eventArtists.artist']
+      relations: ['venue', 'eventArtists', 'eventArtists.artist', 'galleryImages']
     });
     
     if (!event) {
@@ -157,7 +157,7 @@ const updateEvent: RequestHandler = async (req, res) => {
   try {
     const event = await eventRepository.findOne({
       where: { id: req.params.id },
-      relations: ['venue', 'eventArtists', 'eventArtists.artist']
+      relations: ['venue', 'eventArtists', 'eventArtists.artist', 'galleryImages']
     });
     if (!event) {
       res.status(404).json({ message: 'Event not found' });
@@ -177,7 +177,7 @@ const deleteEvent: RequestHandler = async (req, res) => {
   try {
     const event = await eventRepository.findOne({
       where: { id: req.params.id },
-      relations: ['venue', 'eventArtists', 'eventArtists.artist']
+      relations: ['venue', 'eventArtists', 'eventArtists.artist', 'galleryImages']
     });
     if (!event) {
       res.status(404).json({ message: 'Event not found' });
