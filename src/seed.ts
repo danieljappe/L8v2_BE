@@ -83,22 +83,14 @@ async function seed() {
         description: 'A large concert hall.', 
         address: '123 Main St', 
         city: 'Metropolis', 
-        state: 'NY', 
-        country: 'USA', 
-        zipCode: '10001', 
-        capacity: 1000, 
-        isActive: true 
+        mapEmbedHtml: `<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3021.927764196586!2d-73.98513062365787!3d40.758895571386014!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25855d8c14b71%3A0x809c8ebf8cd7ea07!2sTimes%20Sq%2C%20New%20York%2C%20NY%2010036!5e0!3m2!1sen!2sus!4v1700000000000!5m2!1sen!2sus" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`
       }),
       venueRepo.create({ 
         name: 'Nørrebronx', 
         description: 'Underground venue in Nørrebro.', 
         address: '456 Underground St', 
         city: 'Copenhagen', 
-        state: 'Capital Region', 
-        country: 'Denmark', 
-        zipCode: '2200', 
-        capacity: 500, 
-        isActive: true 
+        mapEmbedHtml: `<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2244.2657190888647!2d12.551971177031122!3d55.699897498589514!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x465252ebf0acb1e1%3A0xb69bb60f3e8f302f!2sN%C3%B8rrebro%2C%201%2C%202200%20K%C3%B8benhavn!5e0!3m2!1sen!2sdk!4v1700000000001!5m2!1sen!2sdk" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`
       }),
     ].map(async v => {
       let existing = await venueRepo.findOneBy({ name: v.name });

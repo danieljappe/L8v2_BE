@@ -37,26 +37,6 @@ export class VenueService {
     return this.venueRepository.findByCity(city);
   }
 
-  async findVenuesByCapacity(minCapacity: number): Promise<Venue[]> {
-    return this.venueRepository.findByCapacity(minCapacity);
-  }
-
-  async findActiveVenues(): Promise<Venue[]> {
-    return this.venueRepository.findActiveVenues();
-  }
-
-  async deactivateVenue(id: string): Promise<Venue | null> {
-    return this.venueRepository.update(id, { isActive: false });
-  }
-
-  async activateVenue(id: string): Promise<Venue | null> {
-    return this.venueRepository.update(id, { isActive: true });
-  }
-
-  async updateVenueCapacity(id: string, capacity: number): Promise<Venue | null> {
-    return this.venueRepository.update(id, { capacity });
-  }
-
   async addVenueImage(id: string, imageUrl: string): Promise<Venue | null> {
     const venue = await this.venueRepository.findById(id);
     if (!venue) return null;
@@ -75,4 +55,4 @@ export class VenueService {
 
     return this.venueRepository.update(id, { images });
   }
-} 
+}
