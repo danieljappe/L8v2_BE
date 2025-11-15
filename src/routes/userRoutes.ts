@@ -1,7 +1,7 @@
 import { Router, Request, Response, RequestHandler } from 'express';
 import { AppDataSource } from '../config/database';
 import { User } from '../models/User';
-import { authenticateJWT } from '../middleware/authMiddleware';
+import { authenticateJWT, AuthRequest } from '../middleware/authMiddleware';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
@@ -151,7 +151,24 @@ const getUserById: RequestHandler = async (req, res) => {
 // Create user
 const createUser: RequestHandler = async (req, res) => {
   try {
-    const user = userRepository.create(req.body);
+    const { firstName, lastName, email, password } = req.body;
+
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const existing = await userRepository.findOne({ where: { email } });
+    if (existing) {
+      return res.status(409).json({ message: 'User with this email already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = userRepository.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+    });
     const result = await userRepository.save(user);
     res.status(201).json(result);
   } catch (error) {
@@ -167,7 +184,11 @@ const updateUser: RequestHandler = async (req, res) => {
       res.status(404).json({ message: 'User not found' });
       return;
     }
-    userRepository.merge(user, req.body);
+    const updates = { ...req.body };
+    if (updates.password) {
+      updates.password = await bcrypt.hash(updates.password, 10);
+    }
+    userRepository.merge(user, updates);
     const result = await userRepository.save(user);
     res.json(result);
   } catch (error) {
@@ -206,11 +227,19 @@ const loginUser: RequestHandler = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
       process.env.JWT_SECRET as string,
       { expiresIn: '1d' }
     );
-    res.json({ token });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error logging in' });
   }
@@ -222,5 +251,41 @@ router.post('/', authenticateJWT, createUser);
 router.put('/:id', authenticateJWT, updateUser);
 router.delete('/:id', authenticateJWT, deleteUser);
 router.post('/login', loginUser);
+router.put('/:id/password', authenticateJWT, async (req: AuthRequest, res: Response) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.params.id;
+
+  if (!req.user || req.user.id !== userId) {
+    return res.status(403).json({ message: 'Not authorized to change this password' });
+  }
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'Current and new password are required' });
+  }
+
+  if (newPassword.length < 8) {
+    return res.status(400).json({ message: 'New password must be at least 8 characters long' });
+  }
+
+  try {
+    const user = await userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isCurrentValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentValid) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await userRepository.save(user);
+
+    return res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error updating password:', error);
+    return res.status(500).json({ message: 'Error updating password' });
+  }
+});
 
 export default router; 

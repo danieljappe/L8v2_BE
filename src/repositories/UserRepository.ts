@@ -15,7 +15,4 @@ export class UserRepository extends BaseRepository<User> {
     return this.repository.findOneBy({ username } as FindOptionsWhere<User>);
   }
 
-  async findActiveUsers(): Promise<User[]> {
-    return this.repository.findBy({ isActive: true } as FindOptionsWhere<User>);
-  }
 } 

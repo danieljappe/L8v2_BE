@@ -26,8 +26,6 @@ async function seed() {
         lastName: 'User', 
         email: 'admin@l8.dk', 
         password: await bcrypt.hash('admin123', 10), 
-        role: 'admin', 
-        isActive: true 
       }),
       // Regular user
       userRepo.create({ 
@@ -35,8 +33,6 @@ async function seed() {
         lastName: 'Danø Mourier', 
         email: 'mike@l8.dk', 
         password: await bcrypt.hash('kodeord1', 10), 
-        role: 'user', 
-        isActive: true 
       }),
       // Test user
       userRepo.create({ 
@@ -44,14 +40,12 @@ async function seed() {
         lastName: 'User', 
         email: 'test@l8.dk', 
         password: await bcrypt.hash('test123', 10), 
-        role: 'user', 
-        isActive: true 
       }),
     ].map(async u => {
       let existing = await userRepo.findOneBy({ email: u.email });
       if (!existing) {
         const saved = await userRepo.save(u);
-        console.log(`✅ Created user: ${saved.email} (${saved.role})`);
+        console.log(`✅ Created user: ${saved.email}`);
         return saved;
       } else {
         console.log(`⏭️  User already exists: ${existing.email}`);

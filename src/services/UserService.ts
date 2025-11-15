@@ -42,12 +42,4 @@ export class UserService {
     const isValid = await bcrypt.compare(password, user.password);
     return isValid ? user : null;
   }
-
-  async deactivateUser(id: string): Promise<User | null> {
-    return this.userRepository.update(id, { isActive: false });
-  }
-
-  async activateUser(id: string): Promise<User | null> {
-    return this.userRepository.update(id, { isActive: true });
-  }
 } 

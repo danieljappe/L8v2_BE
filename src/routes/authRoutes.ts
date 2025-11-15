@@ -15,7 +15,7 @@ router.post('/login', async (req, res) => {
   }
   try {
     const user = await userRepo.findOne({ where: { email } });
-    if (!user || !user.isActive) {
+    if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const valid = await bcrypt.compare(password, user.password);
@@ -23,11 +23,19 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
-    res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }

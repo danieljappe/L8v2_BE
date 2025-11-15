@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { Ticket } from './Ticket';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity()
 export class User {
@@ -18,20 +17,11 @@ export class User {
   @Column()
   password!: string;
 
-  @Column({ default: 'user' })
-  role!: string;
-
   @Column({ nullable: true })
   phoneNumber?: string;
 
   @Column({ nullable: true })
   address?: string;
-
-  @Column({ default: true })
-  isActive!: boolean;
-
-  @OneToMany(() => Ticket, ticket => ticket.user)
-  tickets!: Ticket[];
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -11,7 +11,7 @@ export class Ticket {
   @JoinColumn()
   event!: Event;
 
-  @ManyToOne(() => User, user => user.tickets)
+  @ManyToOne(() => User)
   @JoinColumn()
   user!: User;
 
