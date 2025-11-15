@@ -284,8 +284,8 @@ const uploadGalleryImage: RequestHandler = async (req, res) => {
     console.log(`File received: ${req.file.originalname} (${req.file.size} bytes)`);
 
     // Additional file size check
-    if (req.file.size > 10 * 1024 * 1024) {
-      return res.status(400).json({ message: 'File size exceeds 5MB limit' });
+    if (req.file.size > 15 * 1024 * 1024) {
+      return res.status(400).json({ message: 'File size exceeds 15MB limit' });
     }
 
     // Validate file type by checking mimetype
