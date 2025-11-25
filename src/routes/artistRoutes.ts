@@ -155,14 +155,19 @@ const createArtist: RequestHandler = async (req, res) => {
     const artist = artistRepository.create(req.body);
     console.log('Backend: Created artist entity:', artist);
     
-    const result = await artistRepository.save(artist);
-    console.log('Backend: Saved artist result:', result);
+    // Save returns Artist (not Artist[]) when passing a single entity
+    const savedResult: Artist = await artistRepository.save(artist);
+    console.log('Backend: Saved artist result:', savedResult);
     
     // Reload with relations
     const savedArtist = await artistRepository.findOne({ 
-      where: { id: result.id },
+      where: { id: savedResult.id },
       relations: ['bookingUser']
     });
+    
+    if (!savedArtist) {
+      return res.status(500).json({ message: 'Failed to retrieve saved artist' });
+    }
     
     res.status(201).json(savedArtist);
   } catch (error) {

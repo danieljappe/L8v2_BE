@@ -4,22 +4,43 @@ export class AlignSchemaFix1763052818584 implements MigrationInterface {
     name = 'AlignSchemaFix1763052818584'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "event_artist" DROP CONSTRAINT "FK_event_artists_event"`);
-        await queryRunner.query(`ALTER TABLE "event_artist" DROP CONSTRAINT "FK_event_artists_artist"`);
-        await queryRunner.query(`ALTER TABLE "gallery_image" DROP CONSTRAINT "FK_gallery_images_event"`);
-        await queryRunner.query(`ALTER TABLE "event" DROP CONSTRAINT "FK_events_venue"`);
-        await queryRunner.query(`ALTER TABLE "ticket" DROP CONSTRAINT "FK_tickets_event"`);
-        await queryRunner.query(`ALTER TABLE "ticket" DROP CONSTRAINT "FK_tickets_user"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_event_artist_event"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_event_artist_artist"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_event_date"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_event_venue"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_ticket_event"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_ticket_user"`);
-        await queryRunner.query(`ALTER TABLE "event" DROP COLUMN "time"`);
-        await queryRunner.query(`ALTER TABLE "event" DROP COLUMN "maxTickets"`);
-        await queryRunner.query(`ALTER TABLE "ticket" DROP COLUMN "totalPrice"`);
-        await queryRunner.query(`ALTER TABLE "ticket" DROP COLUMN "status"`);
+        // Helper function to safely drop constraint using DO block
+        const dropConstraintSafely = async (tableName: string, constraintName: string) => {
+            await queryRunner.query(`
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.table_constraints 
+                        WHERE constraint_name = '${constraintName}' 
+                        AND table_name = '${tableName}'
+                    ) THEN
+                        EXECUTE 'ALTER TABLE "${tableName}" DROP CONSTRAINT "${constraintName}"';
+                    END IF;
+                END $$;
+            `);
+        };
+
+        // Drop constraints safely (only if they exist)
+        await dropConstraintSafely('event_artist', 'FK_event_artists_event');
+        await dropConstraintSafely('event_artist', 'FK_event_artists_artist');
+        await dropConstraintSafely('gallery_image', 'FK_gallery_images_event');
+        await dropConstraintSafely('event', 'FK_events_venue');
+        await dropConstraintSafely('ticket', 'FK_tickets_event');
+        await dropConstraintSafely('ticket', 'FK_tickets_user');
+        
+        // Drop indexes if they exist (using IF EXISTS for safety)
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_event_artist_event"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_event_artist_artist"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_event_date"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_event_venue"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ticket_event"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ticket_user"`);
+        
+        // Drop columns if they exist
+        await queryRunner.query(`ALTER TABLE "event" DROP COLUMN IF EXISTS "time"`);
+        await queryRunner.query(`ALTER TABLE "event" DROP COLUMN IF EXISTS "maxTickets"`);
+        await queryRunner.query(`ALTER TABLE "ticket" DROP COLUMN IF EXISTS "totalPrice"`);
+        await queryRunner.query(`ALTER TABLE "ticket" DROP COLUMN IF EXISTS "status"`);
         await queryRunner.query(`ALTER TABLE "venue" ADD "country" character varying`);
         await queryRunner.query(`ALTER TABLE "venue" ADD "images" text`);
         await queryRunner.query(`ALTER TABLE "venue" ADD "isActive" boolean NOT NULL DEFAULT true`);
@@ -69,7 +90,7 @@ export class AlignSchemaFix1763052818584 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "venue" ALTER COLUMN "capacity" DROP NOT NULL`);
         await queryRunner.query(`ALTER TABLE "event_artist" ALTER COLUMN "eventId" DROP NOT NULL`);
         await queryRunner.query(`ALTER TABLE "event_artist" ALTER COLUMN "artistId" DROP NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "gallery_image" DROP COLUMN "category"`);
+        await queryRunner.query(`ALTER TABLE "gallery_image" DROP COLUMN IF EXISTS "category"`);
         await queryRunner.query(`CREATE TYPE "public"."gallery_image_category_enum" AS ENUM('event', 'venue', 'artist', 'other')`);
         await queryRunner.query(`ALTER TABLE "gallery_image" ADD "category" "public"."gallery_image_category_enum" NOT NULL DEFAULT 'other'`);
         await queryRunner.query(`ALTER TABLE "event" ALTER COLUMN "description" SET NOT NULL`);
