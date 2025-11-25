@@ -155,13 +155,20 @@ const createArtist: RequestHandler = async (req, res) => {
     const artist = artistRepository.create(req.body);
     console.log('Backend: Created artist entity:', artist);
     
-    // Save returns Artist (not Artist[]) when passing a single entity
-    const savedResult: Artist = await artistRepository.save(artist);
-    console.log('Backend: Saved artist result:', savedResult);
+    // Save returns Artist when passing a single entity
+    const saveResult = await artistRepository.save(artist);
+    // TypeORM save() can return T or T[], but with single entity it's always T
+    const savedArtistEntity = Array.isArray(saveResult) ? saveResult[0] : saveResult;
+    
+    if (!savedArtistEntity || !savedArtistEntity.id) {
+      return res.status(500).json({ message: 'Failed to save artist' });
+    }
+    
+    console.log('Backend: Saved artist result:', savedArtistEntity);
     
     // Reload with relations
     const savedArtist = await artistRepository.findOne({ 
-      where: { id: savedResult.id },
+      where: { id: savedArtistEntity.id },
       relations: ['bookingUser']
     });
     
