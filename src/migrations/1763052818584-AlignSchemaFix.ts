@@ -36,53 +36,78 @@ export class AlignSchemaFix1763052818584 implements MigrationInterface {
         await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ticket_event"`);
         await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ticket_user"`);
         
+        // Helper function to safely add column if it doesn't exist
+        const addColumnIfNotExists = async (tableName: string, columnName: string, columnDefinition: string) => {
+            const hasColumn = await queryRunner.hasColumn(tableName, columnName);
+            if (!hasColumn) {
+                await queryRunner.query(`ALTER TABLE "${tableName}" ADD ${columnDefinition}`);
+            }
+        };
+
         // Drop columns if they exist
         await queryRunner.query(`ALTER TABLE "event" DROP COLUMN IF EXISTS "time"`);
         await queryRunner.query(`ALTER TABLE "event" DROP COLUMN IF EXISTS "maxTickets"`);
         await queryRunner.query(`ALTER TABLE "ticket" DROP COLUMN IF EXISTS "totalPrice"`);
         await queryRunner.query(`ALTER TABLE "ticket" DROP COLUMN IF EXISTS "status"`);
-        await queryRunner.query(`ALTER TABLE "venue" ADD "country" character varying`);
-        await queryRunner.query(`ALTER TABLE "venue" ADD "images" text`);
-        await queryRunner.query(`ALTER TABLE "venue" ADD "isActive" boolean NOT NULL DEFAULT true`);
-        await queryRunner.query(`ALTER TABLE "venue" ADD "latitude" double precision`);
-        await queryRunner.query(`ALTER TABLE "venue" ADD "longitude" double precision`);
-        await queryRunner.query(`ALTER TABLE "event_artist" ADD "performanceOrder" integer`);
-        await queryRunner.query(`ALTER TABLE "event_artist" ADD "performanceTime" character varying`);
-        await queryRunner.query(`ALTER TABLE "event_artist" ADD "setDuration" integer`);
-        await queryRunner.query(`ALTER TABLE "event_artist" ADD "fee" integer`);
-        await queryRunner.query(`ALTER TABLE "event_artist" ADD "updatedAt" TIMESTAMP NOT NULL DEFAULT now()`);
-        await queryRunner.query(`ALTER TABLE "event" ADD "startTime" character varying NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "event" ADD "endTime" character varying`);
-        await queryRunner.query(`ALTER TABLE "event" ADD "totalTickets" integer NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "event" ADD "soldTickets" integer NOT NULL DEFAULT '0'`);
-        await queryRunner.query(`ALTER TABLE "event" ADD "isActive" boolean NOT NULL DEFAULT true`);
-        await queryRunner.query(`ALTER TABLE "event" ADD "capacity" integer`);
-        await queryRunner.query(`ALTER TABLE "event" ADD "currentAttendees" integer NOT NULL DEFAULT '0'`);
-        await queryRunner.query(`ALTER TABLE "ticket" ADD "ticketNumber" character varying NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "ticket" ADD "price" integer NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "ticket" ADD "isUsed" boolean NOT NULL DEFAULT false`);
-        await queryRunner.query(`ALTER TABLE "ticket" ADD "usedAt" TIMESTAMP`);
-        await queryRunner.query(`ALTER TABLE "ticket" ADD "isActive" boolean NOT NULL DEFAULT true`);
-        await queryRunner.query(`ALTER TABLE "ticket" ADD "sold" integer NOT NULL DEFAULT '0'`);
-        await queryRunner.query(`ALTER TABLE "ticket" ADD "saleStartDate" TIMESTAMP`);
-        await queryRunner.query(`ALTER TABLE "ticket" ADD "saleEndDate" TIMESTAMP`);
-        await queryRunner.query(`ALTER TABLE "user" ADD "phoneNumber" character varying`);
-        await queryRunner.query(`ALTER TABLE "user" ADD "address" character varying`);
-        await queryRunner.query(`ALTER TABLE "user" ADD "isActive" boolean NOT NULL DEFAULT true`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "isRead" boolean NOT NULL DEFAULT false`);
-        await queryRunner.query(`CREATE TYPE "public"."contact_message_type_enum" AS ENUM('general', 'booking', 'support', 'feedback')`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "type" "public"."contact_message_type_enum" NOT NULL DEFAULT 'general'`);
-        await queryRunner.query(`CREATE TYPE "public"."contact_message_status_enum" AS ENUM('pending', 'read', 'replied', 'archived')`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "status" "public"."contact_message_status_enum" NOT NULL DEFAULT 'pending'`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "phone" character varying`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "subject" character varying`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "eventDate" TIMESTAMP`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "artistType" character varying`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "eventDetails" text`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "budget" integer`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "adminNotes" text`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "repliedAt" TIMESTAMP`);
-        await queryRunner.query(`ALTER TABLE "contact_message" ADD "updatedAt" TIMESTAMP NOT NULL DEFAULT now()`);
+        
+        // Add columns safely (only if they don't exist)
+        await addColumnIfNotExists('venue', 'country', '"country" character varying');
+        await addColumnIfNotExists('venue', 'images', '"images" text');
+        await addColumnIfNotExists('venue', 'isActive', '"isActive" boolean NOT NULL DEFAULT true');
+        await addColumnIfNotExists('venue', 'latitude', '"latitude" double precision');
+        await addColumnIfNotExists('venue', 'longitude', '"longitude" double precision');
+        await addColumnIfNotExists('event_artist', 'performanceOrder', '"performanceOrder" integer');
+        await addColumnIfNotExists('event_artist', 'performanceTime', '"performanceTime" character varying');
+        await addColumnIfNotExists('event_artist', 'setDuration', '"setDuration" integer');
+        await addColumnIfNotExists('event_artist', 'fee', '"fee" integer');
+        await addColumnIfNotExists('event_artist', 'updatedAt', '"updatedAt" TIMESTAMP NOT NULL DEFAULT now()');
+        await addColumnIfNotExists('event', 'startTime', '"startTime" character varying NOT NULL');
+        await addColumnIfNotExists('event', 'endTime', '"endTime" character varying');
+        await addColumnIfNotExists('event', 'totalTickets', '"totalTickets" integer NOT NULL');
+        await addColumnIfNotExists('event', 'soldTickets', '"soldTickets" integer NOT NULL DEFAULT \'0\'');
+        await addColumnIfNotExists('event', 'isActive', '"isActive" boolean NOT NULL DEFAULT true');
+        await addColumnIfNotExists('event', 'capacity', '"capacity" integer');
+        await addColumnIfNotExists('event', 'currentAttendees', '"currentAttendees" integer NOT NULL DEFAULT \'0\'');
+        await addColumnIfNotExists('ticket', 'ticketNumber', '"ticketNumber" character varying NOT NULL');
+        await addColumnIfNotExists('ticket', 'price', '"price" integer NOT NULL');
+        await addColumnIfNotExists('ticket', 'isUsed', '"isUsed" boolean NOT NULL DEFAULT false');
+        await addColumnIfNotExists('ticket', 'usedAt', '"usedAt" TIMESTAMP');
+        await addColumnIfNotExists('ticket', 'isActive', '"isActive" boolean NOT NULL DEFAULT true');
+        await addColumnIfNotExists('ticket', 'sold', '"sold" integer NOT NULL DEFAULT \'0\'');
+        await addColumnIfNotExists('ticket', 'saleStartDate', '"saleStartDate" TIMESTAMP');
+        await addColumnIfNotExists('ticket', 'saleEndDate', '"saleEndDate" TIMESTAMP');
+        await addColumnIfNotExists('user', 'phoneNumber', '"phoneNumber" character varying');
+        await addColumnIfNotExists('user', 'address', '"address" character varying');
+        await addColumnIfNotExists('user', 'isActive', '"isActive" boolean NOT NULL DEFAULT true');
+        await addColumnIfNotExists('contact_message', 'isRead', '"isRead" boolean NOT NULL DEFAULT false');
+        
+        // Create enum types if they don't exist
+        const contactTypeEnumExists = await queryRunner.query(`
+            SELECT 1 FROM pg_type WHERE typname = 'contact_message_type_enum'
+        `) as any[];
+        if (!contactTypeEnumExists || contactTypeEnumExists.length === 0) {
+            await queryRunner.query(`CREATE TYPE "public"."contact_message_type_enum" AS ENUM('general', 'booking', 'support', 'feedback')`);
+        }
+        
+        await addColumnIfNotExists('contact_message', 'type', '"type" "public"."contact_message_type_enum" NOT NULL DEFAULT \'general\'');
+        
+        const contactStatusEnumExists = await queryRunner.query(`
+            SELECT 1 FROM pg_type WHERE typname = 'contact_message_status_enum'
+        `) as any[];
+        if (!contactStatusEnumExists || contactStatusEnumExists.length === 0) {
+            await queryRunner.query(`CREATE TYPE "public"."contact_message_status_enum" AS ENUM('pending', 'read', 'replied', 'archived')`);
+        }
+        
+        await addColumnIfNotExists('contact_message', 'status', '"status" "public"."contact_message_status_enum" NOT NULL DEFAULT \'pending\'');
+        await addColumnIfNotExists('contact_message', 'phone', '"phone" character varying');
+        await addColumnIfNotExists('contact_message', 'subject', '"subject" character varying');
+        await addColumnIfNotExists('contact_message', 'eventDate', '"eventDate" TIMESTAMP');
+        await addColumnIfNotExists('contact_message', 'artistType', '"artistType" character varying');
+        await addColumnIfNotExists('contact_message', 'eventDetails', '"eventDetails" text');
+        await addColumnIfNotExists('contact_message', 'budget', '"budget" integer');
+        await addColumnIfNotExists('contact_message', 'adminNotes', '"adminNotes" text');
+        await addColumnIfNotExists('contact_message', 'repliedAt', '"repliedAt" TIMESTAMP');
+        await addColumnIfNotExists('contact_message', 'updatedAt', '"updatedAt" TIMESTAMP NOT NULL DEFAULT now()');
         await queryRunner.query(`ALTER TABLE "venue" ALTER COLUMN "description" SET NOT NULL`);
         await queryRunner.query(`ALTER TABLE "venue" ALTER COLUMN "city" DROP NOT NULL`);
         await queryRunner.query(`ALTER TABLE "venue" ALTER COLUMN "state" DROP NOT NULL`);
@@ -91,8 +116,16 @@ export class AlignSchemaFix1763052818584 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "event_artist" ALTER COLUMN "eventId" DROP NOT NULL`);
         await queryRunner.query(`ALTER TABLE "event_artist" ALTER COLUMN "artistId" DROP NOT NULL`);
         await queryRunner.query(`ALTER TABLE "gallery_image" DROP COLUMN IF EXISTS "category"`);
-        await queryRunner.query(`CREATE TYPE "public"."gallery_image_category_enum" AS ENUM('event', 'venue', 'artist', 'other')`);
-        await queryRunner.query(`ALTER TABLE "gallery_image" ADD "category" "public"."gallery_image_category_enum" NOT NULL DEFAULT 'other'`);
+        
+        // Create enum type if it doesn't exist
+        const galleryCategoryEnumExists = await queryRunner.query(`
+            SELECT 1 FROM pg_type WHERE typname = 'gallery_image_category_enum'
+        `) as any[];
+        if (!galleryCategoryEnumExists || galleryCategoryEnumExists.length === 0) {
+            await queryRunner.query(`CREATE TYPE "public"."gallery_image_category_enum" AS ENUM('event', 'venue', 'artist', 'other')`);
+        }
+        
+        await addColumnIfNotExists('gallery_image', 'category', '"category" "public"."gallery_image_category_enum" NOT NULL DEFAULT \'other\'');
         await queryRunner.query(`ALTER TABLE "event" ALTER COLUMN "description" SET NOT NULL`);
         await queryRunner.query(`ALTER TABLE "event" ALTER COLUMN "ticketPrice" SET NOT NULL`);
         await queryRunner.query(`ALTER TABLE "event" ALTER COLUMN "status" SET DEFAULT 'draft'`);
