@@ -44,6 +44,26 @@ export class AlignSchemaFix1763052818584 implements MigrationInterface {
             }
         };
 
+        // Helper function to safely alter column if it exists
+        const alterColumnIfExists = async (tableName: string, columnName: string, alteration: string) => {
+            const hasColumn = await queryRunner.hasColumn(tableName, columnName);
+            if (hasColumn) {
+                await queryRunner.query(`ALTER TABLE "${tableName}" ALTER COLUMN "${columnName}" ${alteration}`);
+            }
+        };
+
+        // Helper function to safely add constraint if it doesn't exist
+        const addConstraintIfNotExists = async (tableName: string, constraintName: string, constraintDefinition: string) => {
+            const constraintExists = await queryRunner.query(`
+                SELECT 1 FROM information_schema.table_constraints 
+                WHERE constraint_name = $1 AND table_name = $2
+            `, [constraintName, tableName]) as any[];
+            
+            if (!constraintExists || constraintExists.length === 0) {
+                await queryRunner.query(`ALTER TABLE "${tableName}" ADD CONSTRAINT "${constraintName}" ${constraintDefinition}`);
+            }
+        };
+
         // Drop columns if they exist
         await queryRunner.query(`ALTER TABLE "event" DROP COLUMN IF EXISTS "time"`);
         await queryRunner.query(`ALTER TABLE "event" DROP COLUMN IF EXISTS "maxTickets"`);
@@ -108,13 +128,15 @@ export class AlignSchemaFix1763052818584 implements MigrationInterface {
         await addColumnIfNotExists('contact_message', 'adminNotes', '"adminNotes" text');
         await addColumnIfNotExists('contact_message', 'repliedAt', '"repliedAt" TIMESTAMP');
         await addColumnIfNotExists('contact_message', 'updatedAt', '"updatedAt" TIMESTAMP NOT NULL DEFAULT now()');
-        await queryRunner.query(`ALTER TABLE "venue" ALTER COLUMN "description" SET NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "venue" ALTER COLUMN "city" DROP NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "venue" ALTER COLUMN "state" DROP NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "venue" ALTER COLUMN "zipCode" DROP NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "venue" ALTER COLUMN "capacity" DROP NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "event_artist" ALTER COLUMN "eventId" DROP NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "event_artist" ALTER COLUMN "artistId" DROP NOT NULL`);
+        
+        // Alter columns safely (only if they exist)
+        await alterColumnIfExists('venue', 'description', 'SET NOT NULL');
+        await alterColumnIfExists('venue', 'city', 'DROP NOT NULL');
+        await alterColumnIfExists('venue', 'state', 'DROP NOT NULL');
+        await alterColumnIfExists('venue', 'zipCode', 'DROP NOT NULL');
+        await alterColumnIfExists('venue', 'capacity', 'DROP NOT NULL');
+        await alterColumnIfExists('event_artist', 'eventId', 'DROP NOT NULL');
+        await alterColumnIfExists('event_artist', 'artistId', 'DROP NOT NULL');
         await queryRunner.query(`ALTER TABLE "gallery_image" DROP COLUMN IF EXISTS "category"`);
         
         // Create enum type if it doesn't exist
@@ -126,20 +148,24 @@ export class AlignSchemaFix1763052818584 implements MigrationInterface {
         }
         
         await addColumnIfNotExists('gallery_image', 'category', '"category" "public"."gallery_image_category_enum" NOT NULL DEFAULT \'other\'');
-        await queryRunner.query(`ALTER TABLE "event" ALTER COLUMN "description" SET NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "event" ALTER COLUMN "ticketPrice" SET NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "event" ALTER COLUMN "status" SET DEFAULT 'draft'`);
-        await queryRunner.query(`ALTER TABLE "ticket" ALTER COLUMN "quantity" DROP NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "ticket" ALTER COLUMN "eventId" DROP NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "ticket" ALTER COLUMN "userId" DROP NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "user" ALTER COLUMN "firstName" SET NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "user" ALTER COLUMN "lastName" SET NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "event_artist" ADD CONSTRAINT "FK_0cc346514503054b3d20c3389fc" FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "event_artist" ADD CONSTRAINT "FK_2332057da6b96737f522d2d595f" FOREIGN KEY ("artistId") REFERENCES "artist"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "gallery_image" ADD CONSTRAINT "FK_1f961932a7ad93669194dac5562" FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "event" ADD CONSTRAINT "FK_0af7bb0535bc01f3c130cfe5fe7" FOREIGN KEY ("venueId") REFERENCES "venue"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "ticket" ADD CONSTRAINT "FK_8a101375d173c39a7c1d02c9d7d" FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "ticket" ADD CONSTRAINT "FK_4bb45e096f521845765f657f5c8" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        
+        // Alter columns safely (only if they exist)
+        await alterColumnIfExists('event', 'description', 'SET NOT NULL');
+        await alterColumnIfExists('event', 'ticketPrice', 'SET NOT NULL');
+        await alterColumnIfExists('event', 'status', 'SET DEFAULT \'draft\'');
+        await alterColumnIfExists('ticket', 'quantity', 'DROP NOT NULL');
+        await alterColumnIfExists('ticket', 'eventId', 'DROP NOT NULL');
+        await alterColumnIfExists('ticket', 'userId', 'DROP NOT NULL');
+        await alterColumnIfExists('user', 'firstName', 'SET NOT NULL');
+        await alterColumnIfExists('user', 'lastName', 'SET NOT NULL');
+        
+        // Add constraints safely (only if they don't exist)
+        await addConstraintIfNotExists('event_artist', 'FK_0cc346514503054b3d20c3389fc', 'FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE NO ACTION ON UPDATE NO ACTION');
+        await addConstraintIfNotExists('event_artist', 'FK_2332057da6b96737f522d2d595f', 'FOREIGN KEY ("artistId") REFERENCES "artist"("id") ON DELETE NO ACTION ON UPDATE NO ACTION');
+        await addConstraintIfNotExists('gallery_image', 'FK_1f961932a7ad93669194dac5562', 'FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE NO ACTION ON UPDATE NO ACTION');
+        await addConstraintIfNotExists('event', 'FK_0af7bb0535bc01f3c130cfe5fe7', 'FOREIGN KEY ("venueId") REFERENCES "venue"("id") ON DELETE NO ACTION ON UPDATE NO ACTION');
+        await addConstraintIfNotExists('ticket', 'FK_8a101375d173c39a7c1d02c9d7d', 'FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE NO ACTION ON UPDATE NO ACTION');
+        await addConstraintIfNotExists('ticket', 'FK_4bb45e096f521845765f657f5c8', 'FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION');
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
