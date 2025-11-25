@@ -68,28 +68,50 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Request logging middleware
 app.use(requestLogger);
 
-// Rate limiting - disabled in development to prevent 429 errors
-if (process.env.NODE_ENV !== 'development') {
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: {
-      error: 'Too many requests from this IP, please try again later.',
-      retryAfter: Math.ceil(15 * 60 / 60) // 15 minutes in minutes
-    },
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    handler: (req, res) => {
-      console.log(`🚫 Rate limit exceeded for IP: ${req.ip}`);
-      res.status(429).json({
-        error: 'Too many requests from this IP, please try again later.',
-        retryAfter: Math.ceil(15 * 60 / 60)
-      });
+// Rate limiting configuration
+// More lenient limits to prevent 429 errors during development
+const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Configure rate limits based on environment
+// Development: Very lenient (1000 requests per 15 min) or disabled for localhost
+// Production: More restrictive (500 requests per 15 min)
+const rateLimitConfig = {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: isDevelopment ? 1000 : parseInt(process.env.RATE_LIMIT_MAX || '500'), // More lenient limits
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: Math.ceil(15 * 60 / 60) // 15 minutes in minutes
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Skip rate limiting for localhost in development
+  skip: (req: express.Request, res: express.Response) => {
+    if (isDevelopment) {
+      const ip = req.ip || req.socket.remoteAddress || '';
+      // Skip for localhost, 127.0.0.1, ::1, or ::ffff:127.0.0.1
+      if (ip.includes('127.0.0.1') || ip.includes('::1') || ip === '::ffff:127.0.0.1' || ip === 'localhost') {
+        return true;
+      }
     }
-  });
-  app.use(limiter);
+    return false;
+  },
+  handler: (req: express.Request, res: express.Response) => {
+    console.log(`🚫 Rate limit exceeded for IP: ${req.ip}`);
+    res.status(429).json({
+      error: 'Too many requests from this IP, please try again later.',
+      retryAfter: Math.ceil(15 * 60 / 60)
+    });
+  }
+};
+
+const limiter = rateLimit(rateLimitConfig);
+app.use(limiter);
+
+if (isDevelopment) {
+  console.log(`🚀 Rate limiting enabled in development mode (${rateLimitConfig.max} requests per 15 min, localhost bypassed)`);
 } else {
-  console.log('🚀 Rate limiting disabled in development mode');
+  console.log(`🛡️ Rate limiting enabled in ${process.env.NODE_ENV} mode (${rateLimitConfig.max} requests per 15 min)`);
 }
 
 // Routes

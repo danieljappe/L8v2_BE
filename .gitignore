@@ -30,6 +30,9 @@ uploads/
 # Test coverage
 coverage/
 
+# Docker/Postgres data
+.data/
+
 # Temporary files
 tmp/
 temp/ 

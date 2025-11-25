@@ -385,11 +385,23 @@ const uploadGalleryImage: RequestHandler = async (req, res) => {
   }
 };
 
-// Rate limiting middleware
+// Rate limiting middleware for uploads
+// More lenient in development, stricter in production
+const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
 const uploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
-  message: 'Too many requests from this IP, please try again after 15 minutes',
+  max: isDevelopment ? 200 : 50, // More lenient in development (200 vs 50 in production)
+  message: 'Too many upload requests from this IP, please try again after 15 minutes',
+  skip: (req: express.Request, res: express.Response) => {
+    if (isDevelopment) {
+      const ip = req.ip || req.socket.remoteAddress || '';
+      // Skip for localhost in development
+      if (ip.includes('127.0.0.1') || ip.includes('::1') || ip === '::ffff:127.0.0.1' || ip === 'localhost') {
+        return true;
+      }
+    }
+    return false;
+  },
 });
 
 router.get('/', getAllGalleryImages);

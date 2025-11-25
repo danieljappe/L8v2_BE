@@ -238,6 +238,8 @@ const loginUser: RequestHandler = async (req, res) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        imageUrl: user.imageUrl,
+        role: user.role,
       },
     });
   } catch (error) {

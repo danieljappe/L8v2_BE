@@ -10,7 +10,7 @@ export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunct
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     try {
-      const secret = process.env.JWT_SECRET || 'your_jwt_secret';
+      const secret = process.env.JWT_SECRET || 'changeme';
       const decoded = jwt.verify(token, secret);
       req.user = decoded;
       next();

@@ -6,7 +6,7 @@ export class InitialMigration1700000000000 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         // Create users table
         await queryRunner.query(`
-            CREATE TABLE "users" (
+            CREATE TABLE "user" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "email" character varying NOT NULL,
                 "password" character varying NOT NULL,
@@ -22,7 +22,7 @@ export class InitialMigration1700000000000 implements MigrationInterface {
 
         // Create venues table
         await queryRunner.query(`
-            CREATE TABLE "venues" (
+            CREATE TABLE "venue" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "name" character varying NOT NULL,
                 "address" character varying NOT NULL,
@@ -40,7 +40,7 @@ export class InitialMigration1700000000000 implements MigrationInterface {
 
         // Create artists table
         await queryRunner.query(`
-            CREATE TABLE "artists" (
+            CREATE TABLE "artist" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "name" character varying NOT NULL,
                 "bio" text,
@@ -55,7 +55,7 @@ export class InitialMigration1700000000000 implements MigrationInterface {
 
         // Create events table
         await queryRunner.query(`
-            CREATE TABLE "events" (
+            CREATE TABLE "event" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "title" character varying NOT NULL,
                 "description" text,
@@ -74,7 +74,7 @@ export class InitialMigration1700000000000 implements MigrationInterface {
 
         // Create tickets table
         await queryRunner.query(`
-            CREATE TABLE "tickets" (
+            CREATE TABLE "ticket" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "eventId" uuid NOT NULL,
                 "userId" uuid NOT NULL,
@@ -89,7 +89,7 @@ export class InitialMigration1700000000000 implements MigrationInterface {
 
         // Create gallery_images table
         await queryRunner.query(`
-            CREATE TABLE "gallery_images" (
+            CREATE TABLE "gallery_image" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "eventId" uuid,
                 "imageUrl" character varying NOT NULL,
@@ -101,7 +101,7 @@ export class InitialMigration1700000000000 implements MigrationInterface {
 
         // Create contact_messages table
         await queryRunner.query(`
-            CREATE TABLE "contact_messages" (
+            CREATE TABLE "contact_message" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "name" character varying NOT NULL,
                 "email" character varying NOT NULL,
@@ -113,7 +113,7 @@ export class InitialMigration1700000000000 implements MigrationInterface {
 
         // Create event_artists table
         await queryRunner.query(`
-            CREATE TABLE "event_artists" (
+            CREATE TABLE "event_artist" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "eventId" uuid NOT NULL,
                 "artistId" uuid NOT NULL,
@@ -124,77 +124,77 @@ export class InitialMigration1700000000000 implements MigrationInterface {
 
         // Add foreign key constraints
         await queryRunner.query(`
-            ALTER TABLE "events" 
+            ALTER TABLE "event" 
             ADD CONSTRAINT "FK_events_venue" 
-            FOREIGN KEY ("venueId") REFERENCES "venues"("id") ON DELETE SET NULL ON UPDATE NO ACTION
+            FOREIGN KEY ("venueId") REFERENCES "venue"("id") ON DELETE SET NULL ON UPDATE NO ACTION
         `);
 
         await queryRunner.query(`
-            ALTER TABLE "tickets" 
+            ALTER TABLE "ticket" 
             ADD CONSTRAINT "FK_tickets_event" 
-            FOREIGN KEY ("eventId") REFERENCES "events"("id") ON DELETE CASCADE ON UPDATE NO ACTION
+            FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
         await queryRunner.query(`
-            ALTER TABLE "tickets" 
+            ALTER TABLE "ticket" 
             ADD CONSTRAINT "FK_tickets_user" 
-            FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION
+            FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
         await queryRunner.query(`
-            ALTER TABLE "gallery_images" 
+            ALTER TABLE "gallery_image" 
             ADD CONSTRAINT "FK_gallery_images_event" 
-            FOREIGN KEY ("eventId") REFERENCES "events"("id") ON DELETE SET NULL ON UPDATE NO ACTION
+            FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE SET NULL ON UPDATE NO ACTION
         `);
 
         await queryRunner.query(`
-            ALTER TABLE "event_artists" 
+            ALTER TABLE "event_artist" 
             ADD CONSTRAINT "FK_event_artists_event" 
-            FOREIGN KEY ("eventId") REFERENCES "events"("id") ON DELETE CASCADE ON UPDATE NO ACTION
+            FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
         await queryRunner.query(`
-            ALTER TABLE "event_artists" 
+            ALTER TABLE "event_artist" 
             ADD CONSTRAINT "FK_event_artists_artist" 
-            FOREIGN KEY ("artistId") REFERENCES "artists"("id") ON DELETE CASCADE ON UPDATE NO ACTION
+            FOREIGN KEY ("artistId") REFERENCES "artist"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
         // Create indexes for better performance
-        await queryRunner.query(`CREATE INDEX "IDX_events_date" ON "events" ("date")`);
-        await queryRunner.query(`CREATE INDEX "IDX_events_venue" ON "events" ("venueId")`);
-        await queryRunner.query(`CREATE INDEX "IDX_tickets_event" ON "tickets" ("eventId")`);
-        await queryRunner.query(`CREATE INDEX "IDX_tickets_user" ON "tickets" ("userId")`);
-        await queryRunner.query(`CREATE INDEX "IDX_gallery_images_event" ON "gallery_images" ("eventId")`);
-        await queryRunner.query(`CREATE INDEX "IDX_event_artists_event" ON "event_artists" ("eventId")`);
-        await queryRunner.query(`CREATE INDEX "IDX_event_artists_artist" ON "event_artists" ("artistId")`);
+        await queryRunner.query(`CREATE INDEX "IDX_event_date" ON "event" ("date")`);
+        await queryRunner.query(`CREATE INDEX "IDX_event_venue" ON "event" ("venueId")`);
+        await queryRunner.query(`CREATE INDEX "IDX_ticket_event" ON "ticket" ("eventId")`);
+        await queryRunner.query(`CREATE INDEX "IDX_ticket_user" ON "ticket" ("userId")`);
+        await queryRunner.query(`CREATE INDEX "IDX_gallery_image_event" ON "gallery_image" ("eventId")`);
+        await queryRunner.query(`CREATE INDEX "IDX_event_artist_event" ON "event_artist" ("eventId")`);
+        await queryRunner.query(`CREATE INDEX "IDX_event_artist_artist" ON "event_artist" ("artistId")`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
         // Drop foreign key constraints first
-        await queryRunner.query(`ALTER TABLE "event_artists" DROP CONSTRAINT "FK_event_artists_artist"`);
-        await queryRunner.query(`ALTER TABLE "event_artists" DROP CONSTRAINT "FK_event_artists_event"`);
-        await queryRunner.query(`ALTER TABLE "gallery_images" DROP CONSTRAINT "FK_gallery_images_event"`);
-        await queryRunner.query(`ALTER TABLE "tickets" DROP CONSTRAINT "FK_tickets_user"`);
-        await queryRunner.query(`ALTER TABLE "tickets" DROP CONSTRAINT "FK_tickets_event"`);
-        await queryRunner.query(`ALTER TABLE "events" DROP CONSTRAINT "FK_events_venue"`);
+        await queryRunner.query(`ALTER TABLE "event_artist" DROP CONSTRAINT "FK_event_artists_artist"`);
+        await queryRunner.query(`ALTER TABLE "event_artist" DROP CONSTRAINT "FK_event_artists_event"`);
+        await queryRunner.query(`ALTER TABLE "gallery_image" DROP CONSTRAINT "FK_gallery_images_event"`);
+        await queryRunner.query(`ALTER TABLE "ticket" DROP CONSTRAINT "FK_tickets_user"`);
+        await queryRunner.query(`ALTER TABLE "ticket" DROP CONSTRAINT "FK_tickets_event"`);
+        await queryRunner.query(`ALTER TABLE "event" DROP CONSTRAINT "FK_events_venue"`);
 
         // Drop indexes
-        await queryRunner.query(`DROP INDEX "IDX_event_artists_artist"`);
-        await queryRunner.query(`DROP INDEX "IDX_event_artists_event"`);
-        await queryRunner.query(`DROP INDEX "IDX_gallery_images_event"`);
-        await queryRunner.query(`DROP INDEX "IDX_tickets_user"`);
-        await queryRunner.query(`DROP INDEX "IDX_tickets_event"`);
-        await queryRunner.query(`DROP INDEX "IDX_events_venue"`);
-        await queryRunner.query(`DROP INDEX "IDX_events_date"`);
+        await queryRunner.query(`DROP INDEX "IDX_event_artist_artist"`);
+        await queryRunner.query(`DROP INDEX "IDX_event_artist_event"`);
+        await queryRunner.query(`DROP INDEX "IDX_gallery_image_event"`);
+        await queryRunner.query(`DROP INDEX "IDX_ticket_user"`);
+        await queryRunner.query(`DROP INDEX "IDX_ticket_event"`);
+        await queryRunner.query(`DROP INDEX "IDX_event_venue"`);
+        await queryRunner.query(`DROP INDEX "IDX_event_date"`);
 
         // Drop tables
-        await queryRunner.query(`DROP TABLE "event_artists"`);
-        await queryRunner.query(`DROP TABLE "contact_messages"`);
-        await queryRunner.query(`DROP TABLE "gallery_images"`);
-        await queryRunner.query(`DROP TABLE "tickets"`);
-        await queryRunner.query(`DROP TABLE "events"`);
-        await queryRunner.query(`DROP TABLE "artists"`);
-        await queryRunner.query(`DROP TABLE "venues"`);
-        await queryRunner.query(`DROP TABLE "users"`);
+        await queryRunner.query(`DROP TABLE "event_artist"`);
+        await queryRunner.query(`DROP TABLE "contact_message"`);
+        await queryRunner.query(`DROP TABLE "gallery_image"`);
+        await queryRunner.query(`DROP TABLE "ticket"`);
+        await queryRunner.query(`DROP TABLE "event"`);
+        await queryRunner.query(`DROP TABLE "artist"`);
+        await queryRunner.query(`DROP TABLE "venue"`);
+        await queryRunner.query(`DROP TABLE "user"`);
     }
 }

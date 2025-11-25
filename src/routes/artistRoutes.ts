@@ -104,7 +104,9 @@ interface ArtistParams {
 // Get all artists
 const getAllArtists: RequestHandler = async (_req, res) => {
   try {
-    const artists = await artistRepository.find();
+    const artists = await artistRepository.find({
+      relations: ['bookingUser']
+    });
     res.json(artists);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching artists' });
@@ -114,7 +116,10 @@ const getAllArtists: RequestHandler = async (_req, res) => {
 // Get artist by ID
 const getArtistById: RequestHandler = async (req, res) => {
   try {
-    const artist = await artistRepository.findOne({ where: { id: req.params.id } });
+    const artist = await artistRepository.findOne({ 
+      where: { id: req.params.id },
+      relations: ['bookingUser']
+    });
     if (!artist) {
       res.status(404).json({ message: 'Artist not found' });
       return;
@@ -153,7 +158,13 @@ const createArtist: RequestHandler = async (req, res) => {
     const result = await artistRepository.save(artist);
     console.log('Backend: Saved artist result:', result);
     
-    res.status(201).json(result);
+    // Reload with relations
+    const savedArtist = await artistRepository.findOne({ 
+      where: { id: result.id },
+      relations: ['bookingUser']
+    });
+    
+    res.status(201).json(savedArtist);
   } catch (error) {
     console.error('Backend: Error creating artist:', error);
     res.status(500).json({ message: 'Error creating artist' });
@@ -168,9 +179,23 @@ const updateArtist: RequestHandler = async (req, res) => {
       res.status(404).json({ message: 'Artist not found' });
       return;
     }
-    artistRepository.merge(artist, req.body);
+    
+    // Handle bookingUserId separately if provided
+    const { bookingUserId, ...updateData } = req.body;
+    if (bookingUserId !== undefined) {
+      artist.bookingUserId = bookingUserId || null;
+    }
+    
+    artistRepository.merge(artist, updateData);
     const result = await artistRepository.save(artist);
-    res.json(result);
+    
+    // Reload with relations
+    const updatedArtist = await artistRepository.findOne({ 
+      where: { id: req.params.id },
+      relations: ['bookingUser']
+    });
+    
+    res.json(updatedArtist);
   } catch (error) {
     res.status(500).json({ message: 'Error updating artist' });
   }

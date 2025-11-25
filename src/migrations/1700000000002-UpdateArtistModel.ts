@@ -6,7 +6,7 @@ export class UpdateArtistModel1700000000002 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         // Add missing columns to artists table
         await queryRunner.query(`
-            ALTER TABLE "artists" 
+            ALTER TABLE "artist" 
             ADD COLUMN "socialMedia" character varying,
             ADD COLUMN "rating" float DEFAULT 0,
             ADD COLUMN "isActive" boolean DEFAULT true
@@ -14,10 +14,10 @@ export class UpdateArtistModel1700000000002 implements MigrationInterface {
         
         // Drop old columns if they exist (from old model)
         try {
-            await queryRunner.query(`ALTER TABLE "artists" DROP COLUMN IF EXISTS "email"`);
-            await queryRunner.query(`ALTER TABLE "artists" DROP COLUMN IF EXISTS "phone"`);
-            await queryRunner.query(`ALTER TABLE "artists" DROP COLUMN IF EXISTS "image"`);
-            await queryRunner.query(`ALTER TABLE "artists" DROP COLUMN IF EXISTS "eventsCount"`);
+            await queryRunner.query(`ALTER TABLE "artist" DROP COLUMN IF EXISTS "email"`);
+            await queryRunner.query(`ALTER TABLE "artist" DROP COLUMN IF EXISTS "phone"`);
+            await queryRunner.query(`ALTER TABLE "artist" DROP COLUMN IF EXISTS "image"`);
+            await queryRunner.query(`ALTER TABLE "artist" DROP COLUMN IF EXISTS "eventsCount"`);
         } catch (error) {
             // Columns might not exist, ignore errors
             console.log('Some old columns were already removed or never existed');
@@ -27,7 +27,7 @@ export class UpdateArtistModel1700000000002 implements MigrationInterface {
     public async down(queryRunner: QueryRunner): Promise<void> {
         // Remove new columns
         await queryRunner.query(`
-            ALTER TABLE "artists" 
+            ALTER TABLE "artist" 
             DROP COLUMN IF EXISTS "socialMedia",
             DROP COLUMN IF EXISTS "rating",
             DROP COLUMN IF EXISTS "isActive"
@@ -35,7 +35,7 @@ export class UpdateArtistModel1700000000002 implements MigrationInterface {
         
         // Restore old columns
         await queryRunner.query(`
-            ALTER TABLE "artists" 
+            ALTER TABLE "artist" 
             ADD COLUMN "email" character varying DEFAULT '',
             ADD COLUMN "phone" character varying DEFAULT '',
             ADD COLUMN "image" character varying DEFAULT '',

@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { EventArtist } from './EventArtist';
+import { User } from './User';
 
 export interface SocialMedia {
   platform: string;
@@ -44,6 +45,13 @@ export class Artist {
 
   @Column({ default: false })
   isBookable!: boolean;
+
+  @Column({ nullable: true })
+  bookingUserId?: string;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'bookingUserId' })
+  bookingUser?: User; 
 
   @OneToMany(() => EventArtist, eventArtist => eventArtist.artist)
   eventArtists!: EventArtist[];
