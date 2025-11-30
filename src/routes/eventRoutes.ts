@@ -2,6 +2,7 @@ import { Router, RequestHandler } from 'express';
 import { AppDataSource } from '../config/database';
 import { Event } from '../models/Event';
 import { authenticateJWT } from '../middleware/authMiddleware';
+import { slugify } from '../utils/slugUtils';
 
 const router = Router();
 const eventRepository = AppDataSource.getRepository(Event);
@@ -106,21 +107,38 @@ const getAllEvents: RequestHandler = async (_req, res) => {
   }
 };
 
-// Get event by ID
+// Get event by name (slug) or ID
 const getEventById: RequestHandler = async (req, res) => {
   try {
-    const eventId = req.params.id;
+    const identifier = req.params.id;
     
-    // Validate that the ID is a valid UUID
-    if (!eventId || typeof eventId !== 'string' || eventId.trim() === '') {
-      res.status(400).json({ message: 'Invalid event ID' });
+    // Validate that the identifier is provided
+    if (!identifier || typeof identifier !== 'string' || identifier.trim() === '') {
+      res.status(400).json({ message: 'Invalid event identifier' });
       return;
     }
 
-    const event = await eventRepository.findOne({
-      where: { id: eventId },
-      relations: ['venue', 'eventArtists', 'eventArtists.artist', 'galleryImages']
-    });
+    let event: Event | null = null;
+
+    // First, try to find by UUID (backward compatibility)
+    // Check if it looks like a UUID (contains hyphens and is 36 characters)
+    if (identifier.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      event = await eventRepository.findOne({
+        where: { id: identifier },
+        relations: ['venue', 'eventArtists', 'eventArtists.artist', 'galleryImages']
+      });
+    }
+
+    // If not found by ID, try to find by slugified title
+    if (!event) {
+      // Get all events to match by slugified title
+      const allEvents = await eventRepository.find({
+        relations: ['venue', 'eventArtists', 'eventArtists.artist', 'galleryImages']
+      });
+      
+      // Find event where slugified title matches the identifier
+      event = allEvents.find(e => slugify(e.title) === identifier) || null;
+    }
     
     if (!event) {
       res.status(404).json({ message: 'Event not found' });
